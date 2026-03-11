@@ -1,5 +1,5 @@
 // MARK: - Timetable View
-// Owner: UI
+// Owner: Josh
 //
 // Displays the weekly timetable as a grid/calendar view.
 // Shows:

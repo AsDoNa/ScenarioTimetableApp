@@ -15,7 +15,7 @@ automatically schedules study sessions into free time slots.
 | **Algorithm (Controller)** | Salavat | `Algorithm/`, `Tests/AlgorithmTests.swift` |
 | **App Integration (Controller)** | *(TBD)* | `App/`, `Controllers/` |
 | **Data & Services (Model + Controller)** | Asher | `Models/`, `Services/`, `Tests/ServiceTests.swift` |
-| **UI (View)** | *(TBD)* | `Views/`, `Views/Components/` |
+| **UI (View)** | Josh | `Views/`, `Views/Components/` |
 
 > **Rule:** Only edit files in your own folders. If you need something from
 > another layer, discuss the interface first and agree on the protocol/contract
@@ -50,7 +50,7 @@ ScenarioTimetableApp/
 │   ├── TimetableViewModel.swift      # Timetable data flow & state
 │   └── TaskViewModel.swift           # Task CRUD & scheduling triggers
 │
-├── Views/                        # SwiftUI views (UI PERSON)
+├── Views/                        # SwiftUI views (JOSH)
 │   ├── TimetableView.swift           # Weekly timetable display
 │   ├── TaskListView.swift            # List/manage study tasks
 │   ├── AddTaskView.swift             # Form to create a new task
@@ -70,7 +70,7 @@ ScenarioTimetableApp/
 ```
 ┌──────────────┐     ┌────────────────────┐     ┌──────────────────┐
 │   Services   │────▶│   Controllers /    │────▶│     Views        │
-│  (Asher)     │     │   ViewModels       │     │   (UI person)    │
+│  (Asher)     │     │   ViewModels       │     │   (Josh)    │
 │              │◀────│   (Integrator)     │◀────│                  │
 └──────────────┘     └────────┬───────────┘     └──────────────────┘
                               │

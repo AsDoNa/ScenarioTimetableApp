@@ -1,5 +1,5 @@
 // MARK: - Preferences View
-// Owner: UI
+// Owner: Josh
 //
 // Allows the user to set their scheduling preferences:
 // - Preferred study hours (start/end time pickers)

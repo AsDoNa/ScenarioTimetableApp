@@ -23,7 +23,7 @@ breakdown, data flow diagram, and ownership map.
 | `Models/`, `Services/` | Asher | Data & Services |
 | `Algorithm/` | Salavat | Scheduling Algorithm |
 | `Controllers/`, `App/` | Integrator | App Integration |
-| `Views/` | UI | User Interface |
+| `Views/` | Josh | User Interface |
 
 ## Getting Started
 

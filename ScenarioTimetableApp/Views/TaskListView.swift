@@ -1,5 +1,5 @@
 // MARK: - Task List View
-// Owner: UI
+// Owner: Josh
 //
 // Displays all study tasks in a scrollable list.
 // Features:

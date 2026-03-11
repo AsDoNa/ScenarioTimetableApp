@@ -1,5 +1,5 @@
 // MARK: - Task Row View (Component)
-// Owner: UI
+// Owner: Josh
 //
 // A reusable component that renders a single task row
 // in the task list. Used by TaskListView.

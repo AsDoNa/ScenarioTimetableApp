@@ -1,5 +1,5 @@
 // MARK: - Time Slot View (Component)
-// Owner: UI
+// Owner: Josh
 //
 // A reusable component that renders a single time block
 // in the timetable grid. Used by TimetableView.
