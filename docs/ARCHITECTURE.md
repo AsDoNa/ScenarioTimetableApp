@@ -13,7 +13,7 @@ automatically schedules study sessions into free time slots.
 | Role | Owner | Folders / Files |
 |------|-------|----------------|
 | **Algorithm (Controller)** | Salavat | `Algorithm/`, `Tests/AlgorithmTests.swift` |
-| **App Integration (Controller)** | *(TBD)* | `App/`, `Controllers/` |
+| **App Integration (Controller)** | Adry | `App/`, `Controllers/` |
 | **Data & Services (Model + Controller)** | Asher | `Models/`, `Services/`, `Tests/ServiceTests.swift` |
 | **UI (View)** | Josh | `Views/`, `Views/Components/` |
 
@@ -46,7 +46,7 @@ ScenarioTimetableApp/
 ├── Algorithm/                    # Scheduling algorithm (SALAVAT)
 │   └── SchedulingAlgorithm.swift     # Core logic: tasks + free time → schedule
 │
-├── Controllers/                  # ViewModels / state management (INTEGRATOR)
+├── Controllers/                  # ViewModels / state management (ADRY)
 │   ├── TimetableViewModel.swift      # Timetable data flow & state
 │   └── TaskViewModel.swift           # Task CRUD & scheduling triggers
 │
@@ -71,7 +71,7 @@ ScenarioTimetableApp/
 ┌──────────────┐     ┌────────────────────┐     ┌──────────────────┐
 │   Services   │────▶│   Controllers /    │────▶│     Views        │
 │  (Asher)     │     │   ViewModels       │     │   (Josh)    │
-│              │◀────│   (Integrator)     │◀────│                  │
+│              │◀────│   (Adry)           │◀────│                  │
 └──────────────┘     └────────┬───────────┘     └──────────────────┘
                               │
                               ▼
@@ -96,7 +96,7 @@ codes against those types.
 
 ### Services → Controllers
 Controllers call services to fetch/save data. Asher exposes simple async
-methods; the integrator calls them.
+methods; Adry calls them.
 
 ### Algorithm → Controllers
 Salavat's algorithm takes `[TimetableEntry]`, `[StudyTask]`, and

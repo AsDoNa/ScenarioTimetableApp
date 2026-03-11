@@ -1,5 +1,5 @@
 // MARK: - Task ViewModel
-// Owner: Integrator
+// Owner: Adry
 //
 // Manages study task CRUD and triggers rescheduling when tasks change.
 // Coordinates between:

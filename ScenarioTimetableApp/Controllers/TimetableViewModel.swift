@@ -1,5 +1,5 @@
 // MARK: - Timetable ViewModel
-// Owner: Integrator
+// Owner: Adry
 //
 // Manages the timetable state and coordinates between:
 // - UCLAPIService (fetching timetable data)

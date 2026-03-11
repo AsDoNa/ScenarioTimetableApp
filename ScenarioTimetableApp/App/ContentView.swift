@@ -1,5 +1,5 @@
 // MARK: - Root Navigation View
-// Owner: Integrator
+// Owner: Adry
 //
 // The root view of the app. Sets up tab navigation or a NavigationStack
 // and wires ViewModels to Views.
