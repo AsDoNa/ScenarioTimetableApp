@@ -8,13 +8,19 @@
 import Foundation
 
 struct StudyTask: Identifiable, Codable {
-    let id: UUID
-    // TODO: Define properties, e.g.:
-    // - title: String
-    // - subject: String
-    // - deadline: Date
-    // - priority: Priority       (enum: high, medium, low)
-    // - estimatedHours: Double
-    // - completedHours: Double
-    // - isComplete: Bool
+    enum Priority: String, Codable {
+        case high
+        case medium
+        case low
+    }
+    
+    let id: UUID = UUID()
+    var title: String
+    var subject: String
+    var moduleCode: String?
+    var deadline: Date
+    var priority: Priority
+    var estimatedTime: Int // Estimated time in minutes to give extra flexibility - conversion into hours when necessary by division by 60
+    var completedTime: Int // Same reasoning as above
+    var isComplete: Bool
 }
