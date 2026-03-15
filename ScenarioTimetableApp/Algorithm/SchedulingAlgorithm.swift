@@ -49,6 +49,47 @@ class SchedulingAlgorithm {
             return []
         }
     
+    private static func placeNextSession(
+        task: StudyTask,
+        maxSessionMinutes: Int,
+        on dayIndex: Int,
+        in queue: inout [DayState],
+        minBreak: Int
+    ) -> StudySession? {
+        // Find the first free slot that is large enough to fit the session
+        guard let slotIndex = queue[dayIndex].freeSlots.firstIndex(where: { slot in
+            Int(slot.endTime.timeIntervalSince(slot.startTime) / 60) >= MIN_SESSION_MINUTES
+        }) else { return nil }
+
+        // Get the slot and compute the session length
+        let slot = queue[dayIndex].freeSlots[slotIndex]
+        let slotMinutes = Int(slot.endTime.timeIntervalSince(slot.startTime) / 60)
+        let sessionLen  = min(maxSessionMinutes, slotMinutes)
+
+        let sessionStart = slot.startTime
+        let sessionEnd   = sessionStart.addingTimeInterval(TimeInterval(sessionLen * 60))
+
+        let session = StudySession(
+            taskID:     task.id,
+            startTime:  sessionStart,
+            endTime:    sessionEnd,
+            taskTitle:  task.title,
+            moduleCode: task.moduleCode
+        )
+
+        let newSlotStart     = sessionEnd.addingTimeInterval(TimeInterval(minBreak * 60))
+        let remainingMinutes = Int(slot.endTime.timeIntervalSince(newSlotStart) / 60)
+
+        if remainingMinutes >= MIN_SESSION_MINUTES {
+            queue[dayIndex].freeSlots[slotIndex] = TimeSlot(startTime: newSlotStart, endTime: slot.endTime)
+        } else {
+            queue[dayIndex].freeSlots.remove(at: slotIndex)
+        }
+
+        queue[dayIndex].scheduledMinutes += sessionLen
+        return session
+    }
+    
     private static func pickLeastLoadedIndex(
         in queue: [DayState],
         minimumMinutes: Int
@@ -59,7 +100,7 @@ class SchedulingAlgorithm {
             .min { $0.element.scheduledMinutes < $1.element.scheduledMinutes }?
             .offset
     }
-    
+
     private static func buildDayQueue(
         activeDays: [Date],
         timetable: [TimetableEntry],
