@@ -21,6 +21,9 @@ import Foundation
 
 class SchedulingAlgorithm {
 
+    // constants
+    private static let MIN_SESSION_MINUTES = 15
+
     // Main entry point:
     static func generateSchedule(
         timetable: [TimetableEntry], 
@@ -83,6 +86,43 @@ class SchedulingAlgorithm {
         return merged
     }
 
+
+    // Helper function to compute the free slots:
+    private static func computeFreeSlots(
+        window: (windowStart: Date, windowEnd: Date),
+        blocked: [(start: Date, end: Date)]  // intervals that are already merged and sorted
+    ) -> [TimeSlot] {
+
+        var slots: [TimeSlot] = []
+        var pointer = window.windowStart
+
+        for block in blocked {
+            let blockStart = max(block.start, window.windowStart)
+            let blockEnd   = min(block.end,   window.windowEnd)
+
+            guard blockStart < blockEnd else { continue } // block is fully outside window
+
+            if pointer < blockStart {
+                // Gap between pointer and this block
+                let gapMinutes = Int(blockStart.timeIntervalSince(pointer) / 60)
+                if gapMinutes >= MIN_SESSION_MINUTES {
+                    slots.append(TimeSlot(startTime: pointer, endTime: blockStart))
+                }
+            }
+            // Advance pointer past this block
+            pointer = max(pointer, blockEnd)
+        }
+
+        // Trailing gap between last block and end of window
+        if pointer < window.windowEnd {
+            let gapMinutes = Int(window.windowEnd.timeIntervalSince(pointer) / 60)
+            if gapMinutes >= MIN_SESSION_MINUTES {
+                slots.append(TimeSlot(startTime: pointer, endTime: window.windowEnd))
+            }
+        }
+
+        return slots
+    }
 
     
     // TODO: Implement
