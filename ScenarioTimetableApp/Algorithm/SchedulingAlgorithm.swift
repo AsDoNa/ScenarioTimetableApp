@@ -149,6 +149,25 @@ class SchedulingAlgorithm {
         return slots
     }
 
+    private static func filterAndSortTasks(_ tasks: [StudyTask]) -> [StudyTask] {
+        tasks
+            .filter { !$0.isComplete && ($0.estimatedTime - $0.completedTime) > 0 }
+            .sorted { a, b in
+                let rankA = priorityRank(a.priority)
+                let rankB = priorityRank(b.priority)
+                if rankA != rankB { return rankA < rankB }
+                return a.deadline < b.deadline
+            }
+    }
+
+    private static func priorityRank(_ priority: StudyTask.Priority) -> Int {
+        switch priority {
+        case .high:   return 0
+        case .medium: return 1
+        case .low:    return 2
+        }
+    }
+
     
     // TODO: Implement
     //
