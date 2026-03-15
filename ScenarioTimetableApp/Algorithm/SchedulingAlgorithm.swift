@@ -46,6 +46,8 @@ class SchedulingAlgorithm {
 
             let sortedTasks = filterAndSortTasks(tasks)
             guard !sortedTasks.isEmpty else { return [] }
+            guard preferences.maxSessionLength > 0,
+                  preferences.minBreakBetweenSessions >= 0 else { return [] }
 
             var allSessions: [StudySession] = []
 
