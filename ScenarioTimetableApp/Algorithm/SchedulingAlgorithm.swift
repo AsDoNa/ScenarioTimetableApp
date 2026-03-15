@@ -24,6 +24,19 @@ class SchedulingAlgorithm {
     // constants
     private static let MIN_SESSION_MINUTES = 15
 
+    private struct DayState {
+        let date: Date
+        var freeSlots: [TimeSlot]
+        var scheduledMinutes: Int
+
+        // Checks availability study slot for required time period
+        func hasCapacity(minimumMinutes: Int) -> Bool {
+            freeSlots.contains { slot in
+                Int(slot.endTime.timeIntervalSince(slot.startTime) / 60) >= minimumMinutes
+            }
+        }
+    }
+
     // Main entry point:
     static func generateSchedule(
         timetable: [TimetableEntry], 
@@ -35,6 +48,45 @@ class SchedulingAlgorithm {
 
             return []
         }
+    
+    private static func pickLeastLoadedIndex(
+        in queue: [DayState],
+        minimumMinutes: Int
+    ) -> Int? {
+        queue
+            .enumerated()
+            .filter { $0.element.hasCapacity(minimumMinutes: minimumMinutes) }
+            .min { $0.element.scheduledMinutes < $1.element.scheduledMinutes }?
+            .offset
+    }
+    
+    private static func buildDayQueue(
+        activeDays: [Date],
+        timetable: [TimetableEntry],
+        calendarEvents: [CalendarEvent],
+        preferences: UserPreferences,
+        calendar: Calendar = .current
+    ) -> [DayState] {
+        activeDays.compactMap { day in
+            let timetableBlocked: [(start: Date, end: Date)] = timetable
+                .filter { calendar.isDate($0.startTime, inSameDayAs: day) }
+                .map { ($0.startTime, $0.endTime) }
+
+            let calendarBlocked: [(start: Date, end: Date)] = calendarEvents
+                .filter { calendar.isDate($0.startTime, inSameDayAs: day) }
+                .map { ($0.startTime, $0.endTime) }
+
+            let allBlocked = mergeOverlappingIntervals(timetableBlocked + calendarBlocked)
+
+            guard let window = applyWorkingWindow(to: day, prefs: preferences, calendar: calendar)
+            else { return nil }
+
+            let slots = computeFreeSlots(window: window, blocked: allBlocked)
+
+            return DayState(date: day, freeSlots: slots, scheduledMinutes: 0)
+        }
+    }
+
     
     // Helper function to build the active days array:
     private static func buildActiveDays(
