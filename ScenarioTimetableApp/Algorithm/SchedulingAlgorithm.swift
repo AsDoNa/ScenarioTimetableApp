@@ -86,6 +86,31 @@ class SchedulingAlgorithm {
         return merged
     }
 
+    private static func applyWorkingWindow(
+        to day: Date,
+        prefs: UserPreferences,
+        calendar: Calendar = .current
+    ) -> (windowStart: Date, windowEnd: Date)? {
+
+        let startComponents = calendar.dateComponents([.hour, .minute], from: prefs.preferredStudyStartTime)
+        let endComponents   = calendar.dateComponents([.hour, .minute], from: prefs.preferredStudyEndTime)
+
+        var dayComponents = calendar.dateComponents([.year, .month, .day], from: day)
+
+        dayComponents.hour   = startComponents.hour
+        dayComponents.minute = startComponents.minute
+        dayComponents.second = 0
+        guard let windowStart = calendar.date(from: dayComponents) else { return nil }
+
+        dayComponents.hour   = endComponents.hour
+        dayComponents.minute = endComponents.minute
+        guard let windowEnd = calendar.date(from: dayComponents) else { return nil }
+
+        guard windowStart < windowEnd else { return nil }
+
+        return (windowStart, windowEnd)
+    }
+
 
     // Helper function to compute the free slots:
     private static func computeFreeSlots(
