@@ -5,17 +5,6 @@
 // - Takes inputs: timetable entries, study tasks, user preferences
 // - Returns output: an array of StudySessions placed into free time
 // - No side effects, no network calls, no UI — just logic.
-//
-// Algorithm requirements:
-// 1. Identify free time slots (gaps between timetable entries)
-// 2. Respect user preferences (study hours, break length, days off)
-// 3. Prioritise tasks by deadline and priority level
-// 4. Distribute study hours across the week (avoid cramming)
-// 5. Handle edge cases: not enough free time, overlapping deadlines
-//
-// Suggested approach:
-// - Start with a greedy algorithm (earliest deadline first)
-// - Improve later with more sophisticated scheduling if needed
 
 import Foundation
 
@@ -45,10 +34,45 @@ class SchedulingAlgorithm {
         preferences: UserPreferences,
         weekStartDate: Date
         ) -> [StudySession] {
+            let activeDays = buildActiveDays(weekStart: weekStartDate, daysOff: preferences.preferredDaysOff)
+            guard !activeDays.isEmpty else { return [] }
 
-            return []
+            var queue = buildDayQueue(
+                activeDays: activeDays, 
+                timetable: timetable, 
+                calendarEvents: calendarEvents, 
+                preferences: preferences
+            )
+
+            let sortedTasks = filterAndSortTasks(tasks)
+            guard !sortedTasks.isEmpty else { return [] }
+
+            var allSessions: [StudySession] = []
+
+            for task in sortedTasks {
+                var remaining = task.estimatedTime - task.completedTime
+
+                while remaining > 0 {
+                    guard let idx = pickLeastLoadedIndex(in: queue, minimumMinutes: MIN_SESSION_MINUTES)
+                    else { break }
+
+                    guard let session = placeNextSession(
+                        task: task,
+                        maxSessionMinutes: min(remaining, preferences.maxSessionLength),
+                        on: idx,
+                        in: &queue,
+                        minBreak: preferences.minBreakBetweenSessions
+                        )
+                    else { break }
+
+                    remaining -= Int(session.endTime.timeIntervalSince(session.startTime) / 60)
+                    allSessions.append(session)
+                }
+            }
+
+            return allSessions.sorted { $0.startTime < $1.startTime }
         }
-    
+
     private static func placeNextSession(
         task: StudyTask,
         maxSessionMinutes: Int,
@@ -117,7 +141,7 @@ class SchedulingAlgorithm {
                 .filter { calendar.isDate($0.startTime, inSameDayAs: day) }
                 .map { ($0.startTime, $0.endTime) }
 
-            let allBlocked = mergeOverlappingIntervals(timetableBlocked + calendarBlocked)
+            let allBlocked = mergeOverlapping(timetableBlocked + calendarBlocked)
 
             guard let window = applyWorkingWindow(to: day, prefs: preferences, calendar: calendar)
             else { return nil }
@@ -130,7 +154,7 @@ class SchedulingAlgorithm {
 
     
     // Helper function to build the active days array:
-    private static func buildActiveDays(
+    static func buildActiveDays(
         weekStart: Date,
         daysOff: [UserPreferences.Weekday],
         calendar: Calendar = .current
@@ -160,7 +184,7 @@ class SchedulingAlgorithm {
     }
 
     // Helper function to merge overlapping intervals:
-    private static func mergeOverlappingIntervals(
+    static func mergeOverlapping(
         _ intervals: [(start: Date, end: Date)]
     ) -> [(start: Date, end: Date)] {
         guard !intervals.isEmpty else { return [] }
@@ -179,7 +203,7 @@ class SchedulingAlgorithm {
         return merged
     }
 
-    private static func applyWorkingWindow(
+    static func applyWorkingWindow(
         to day: Date,
         prefs: UserPreferences,
         calendar: Calendar = .current
@@ -206,7 +230,7 @@ class SchedulingAlgorithm {
 
 
     // Helper function to compute the free slots:
-    private static func computeFreeSlots(
+    static func computeFreeSlots(
         window: (windowStart: Date, windowEnd: Date),
         blocked: [(start: Date, end: Date)]  // intervals that are already merged and sorted
     ) -> [TimeSlot] {
@@ -242,7 +266,7 @@ class SchedulingAlgorithm {
         return slots
     }
 
-    private static func filterAndSortTasks(_ tasks: [StudyTask]) -> [StudyTask] {
+    static func filterAndSortTasks(_ tasks: [StudyTask]) -> [StudyTask] {
         tasks
             .filter { !$0.isComplete && ($0.estimatedTime - $0.completedTime) > 0 }
             .sorted { a, b in
@@ -260,19 +284,4 @@ class SchedulingAlgorithm {
         case .low:    return 2
         }
     }
-
-    
-    // TODO: Implement
-    //
-    // Main entry point:
-    // func generateSchedule(
-    //     timetable: [TimetableEntry],
-    //     tasks: [StudyTask],
-    //     preferences: UserPreferences
-    // ) -> [StudySession]
-    //
-    // Helper functions to consider:
-    // - func findFreeSlots(in timetable: [TimetableEntry], preferences: UserPreferences) -> [TimeSlot]
-    // - func prioritiseTasks(_ tasks: [StudyTask]) -> [StudyTask]
-    // - func fitTaskIntoSlots(task: StudyTask, slots: [TimeSlot]) -> [StudySession]
 }
