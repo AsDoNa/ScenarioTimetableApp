@@ -63,6 +63,25 @@ class SchedulingAlgorithm {
         }
     }
 
+    // Helper function to merge overlapping intervals:
+    private static func mergeOverlappingIntervals(
+        _ intervals: [(start: Date, end: Date)]
+    ) -> [(start: Date, end: Date)] {
+        guard !intervals.isEmpty else { return [] }
+
+        let sorted = intervals.sorted { $0.start < $1.start }
+        var merged: [(start: Date, end: Date)] = [sorted[0]]
+
+        for interval in sorted.dropFirst() {
+            let last = merged[merged.count - 1]
+            if interval.start <= last.end {
+                merged[merged.count - 1] = (start: last.start, end: max(last.end, interval.end))
+            } else {
+                merged.append(interval)
+            }
+        }
+        return merged
+    }
 
 
     
