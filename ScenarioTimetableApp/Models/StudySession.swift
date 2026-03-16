@@ -7,11 +7,10 @@
 import Foundation
 
 struct StudySession: Identifiable, Codable {
-    let id: UUID
-    // TODO: Define properties, e.g.:
-    // - taskID: UUID             (links back to the StudyTask)
-    // - date: Date
-    // - startTime: Date
-    // - endTime: Date
-    // - taskTitle: String        (denormalised for display convenience)
+    let id: UUID = UUID()
+    let taskID: UUID
+    let startTime: Date
+    let endTime: Date
+    let taskTitle: String
+    let moduleCode: String?
 }

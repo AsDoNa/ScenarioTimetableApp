@@ -7,13 +7,22 @@
 import Foundation
 
 struct TimetableEntry: Identifiable, Codable {
-    let id: UUID
-    // TODO: Define properties, e.g.:
-    // - moduleName: String
-    // - moduleCode: String
-    // - dayOfWeek: Int          (1 = Monday ... 7 = Sunday)
-    // - startTime: Date
-    // - endTime: Date
-    // - location: String
-    // - type: String            ("Lecture", "Tutorial", "Lab", etc.)
+    
+    enum SessionType: Codable {
+        case lecture
+        case tutorial
+        case lab
+        case problemBasedLearning
+        case unknown(String)
+    }
+    
+    let id: UUID = UUID()
+    let moduleName: String
+    let moduleCode: String
+    let lecturerName: String
+    let startTime: Date
+    let endTime: Date
+    let location: String
+    let locationCoords: Coordinates
+    let type: SessionType
 }

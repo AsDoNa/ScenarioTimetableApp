@@ -11,9 +11,9 @@
 import Foundation
 
 struct WeekSchedule: Codable {
-    // TODO: Define properties, e.g.:
-    // - weekStartDate: Date
-    // - timetableEntries: [TimetableEntry]
-    // - studySessions: [StudySession]
-    // - freeSlots: [TimeSlot]            (computed from the above)
+    let weekStartDate: Date
+    var timetableEntries: [TimetableEntry]
+    var studySessions: [StudySession]
+    var calendarEvents: [CalendarEvent]
+    // TODO computed freeSlots [TimeSlot]
 }
