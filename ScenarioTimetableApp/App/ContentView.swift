@@ -9,10 +9,21 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        // TODO: Set up tab navigation:
-        // - Timetable tab  → TimetableView
-        // - Tasks tab       → TaskListView
-        // - Preferences tab → PreferencesView
-        Text("ScenarioTimetableApp")
+        TabView {
+            TimetableView()
+                .tabItem {
+                    Label("Timetable", systemImage: "calendar")
+                }
+
+            TaskListView()
+                .tabItem {
+                    Label("Tasks", systemImage: "list.bullet")
+                }
+
+            PreferencesView()
+                .tabItem {
+                    Label("Preferences", systemImage: "gearshape")
+                }
+        }
     }
 }
