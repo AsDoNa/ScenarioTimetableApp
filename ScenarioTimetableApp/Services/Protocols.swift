@@ -21,6 +21,6 @@ protocol PersistenceServiceProtocol {
 }
 
 protocol UCLAPIServiceProtocol {
-    func fetchTimetable() async throws -> [TimetableEntry]
+    func fetchTimetable(for date: Date) async throws -> [TimetableEntry]
     func authenticate() async throws
 }
