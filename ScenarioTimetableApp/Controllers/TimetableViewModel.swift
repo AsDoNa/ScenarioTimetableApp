@@ -48,7 +48,7 @@ final class TimetableViewModel {
         do {
             // Authenticate and fetch timetable
             try await uclAPIService.authenticate()
-            let timetable = try await uclAPIService.fetchTimetable()
+            let timetable = try await uclAPIService.fetchTimetable(for: startDate)
 
             // Load stored study sessions
             let sessions = try persistenceService.loadSessions()

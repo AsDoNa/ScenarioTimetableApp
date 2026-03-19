@@ -19,19 +19,11 @@
 			remoteGlobalIDString = A89671AE2F6AEC8B00384578;
 			remoteInfo = ScenarioTimetableApp;
 		};
-		A89671C72F6AEC8D00384578 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A89671A72F6AEC8B00384578 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A89671AE2F6AEC8B00384578;
-			remoteInfo = ScenarioTimetableApp;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A89671AF2F6AEC8B00384578 /* ScenarioTimetableApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScenarioTimetableApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A89671BC2F6AEC8D00384578 /* ScenarioTimetableAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScenarioTimetableAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A89671C62F6AEC8D00384578 /* ScenarioTimetableAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScenarioTimetableAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A89672152F6AEDF400384578 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		A89672192F6B061500384578 /* Config.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = Config.xcconfig.example; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -77,13 +69,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A89671C32F6AEC8D00384578 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -103,7 +88,6 @@
 			children = (
 				A89671AF2F6AEC8B00384578 /* ScenarioTimetableApp.app */,
 				A89671BC2F6AEC8D00384578 /* ScenarioTimetableAppTests.xctest */,
-				A89671C62F6AEC8D00384578 /* ScenarioTimetableAppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -156,26 +140,6 @@
 			productReference = A89671BC2F6AEC8D00384578 /* ScenarioTimetableAppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		A89671C52F6AEC8D00384578 /* ScenarioTimetableAppUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A89671D62F6AEC8D00384578 /* Build configuration list for PBXNativeTarget "ScenarioTimetableAppUITests" */;
-			buildPhases = (
-				A89671C22F6AEC8D00384578 /* Sources */,
-				A89671C32F6AEC8D00384578 /* Frameworks */,
-				A89671C42F6AEC8D00384578 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A89671C82F6AEC8D00384578 /* PBXTargetDependency */,
-			);
-			name = ScenarioTimetableAppUITests;
-			packageProductDependencies = (
-			);
-			productName = ScenarioTimetableAppUITests;
-			productReference = A89671C62F6AEC8D00384578 /* ScenarioTimetableAppUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -190,10 +154,6 @@
 						CreatedOnToolsVersion = 26.3;
 					};
 					A89671BB2F6AEC8D00384578 = {
-						CreatedOnToolsVersion = 26.3;
-						TestTargetID = A89671AE2F6AEC8B00384578;
-					};
-					A89671C52F6AEC8D00384578 = {
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = A89671AE2F6AEC8B00384578;
 					};
@@ -215,7 +175,6 @@
 			targets = (
 				A89671AE2F6AEC8B00384578 /* ScenarioTimetableApp */,
 				A89671BB2F6AEC8D00384578 /* ScenarioTimetableAppTests */,
-				A89671C52F6AEC8D00384578 /* ScenarioTimetableAppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -231,13 +190,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A89671BA2F6AEC8D00384578 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A89671C42F6AEC8D00384578 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -261,13 +213,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A89671C22F6AEC8D00384578 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -275,11 +220,6 @@
 			isa = PBXTargetDependency;
 			target = A89671AE2F6AEC8B00384578 /* ScenarioTimetableApp */;
 			targetProxy = A89671BD2F6AEC8D00384578 /* PBXContainerItemProxy */;
-		};
-		A89671C82F6AEC8D00384578 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A89671AE2F6AEC8B00384578 /* ScenarioTimetableApp */;
-			targetProxy = A89671C72F6AEC8D00384578 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -517,46 +457,6 @@
 			};
 			name = Release;
 		};
-		A89671D72F6AEC8D00384578 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 35747KLLQ3;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.asher.ScenarioTimetableAppUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ScenarioTimetableApp;
-			};
-			name = Debug;
-		};
-		A89671D82F6AEC8D00384578 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 35747KLLQ3;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.asher.ScenarioTimetableAppUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ScenarioTimetableApp;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -583,15 +483,6 @@
 			buildConfigurations = (
 				A89671D42F6AEC8D00384578 /* Debug */,
 				A89671D52F6AEC8D00384578 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		A89671D62F6AEC8D00384578 /* Build configuration list for PBXNativeTarget "ScenarioTimetableAppUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A89671D72F6AEC8D00384578 /* Debug */,
-				A89671D82F6AEC8D00384578 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
