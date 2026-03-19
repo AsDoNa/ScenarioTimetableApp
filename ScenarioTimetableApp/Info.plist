@@ -4,6 +4,8 @@
 <dict>
 	<key>UCL_CALLBACK_URL</key>
 	<string>$(UCL_CALLBACK_URL)</string>
+	<key>UCL_CLIENT_SECRET</key>
+	<string>$(UCL_CLIENT_SECRET)</string>
 	<key>UCL_CLIENT_ID</key>
 	<string>$(UCL_CLIENT_ID)</string>
 </dict>
