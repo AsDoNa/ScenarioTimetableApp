@@ -1,0 +1,7 @@
+// UCL API Configuration
+// Copy to Config.xcconfig and update with UCL API Client ID & Client Secret
+// NEVER commit Config.xcconfig to git.
+
+UCL_CLIENT_ID = your_ucl_api_client_id_here
+UCL_CALLBACK_URL = timetableapp://auth/callback
+UCL_CLIENT_SECRET = your_ucl_api_client_secret
