@@ -2,11 +2,24 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>timetableapp</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSFileProtectionComplete</key>
+	<string>NSFileProtectionComplete</string>
 	<key>UCL_CALLBACK_URL</key>
 	<string>$(UCL_CALLBACK_URL)</string>
 	<key>UCL_CLIENT_SECRET</key>
 	<string>$(UCL_CLIENT_SECRET)</string>
 	<key>UCL_CLIENT_ID</key>
 	<string>$(UCL_CLIENT_ID)</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Make My Timetable needs calendar access to schedule your study sessions</string>
 </dict>
 </plist>

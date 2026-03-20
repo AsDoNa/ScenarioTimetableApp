@@ -23,10 +23,12 @@ class CalendarService:CalendarServiceProtocol {
     }
     
     func requestCalendarAccess() async throws {
+        print("Calendar access granted: \(hasCalendarAccess)")
         hasCalendarAccess = try await eventStore.requestFullAccessToEvents()
     }
     
     func fetchEvents(for dateRange: DateInterval) async throws -> [CalendarEvent] {
+        try await requestCalendarAccess()
         guard hasCalendarAccess else { throw CalendarError.accessDenied }
         let calendars = eventStore.calendars(for: .event).filter { $0 !== studyCalendar }
         let predicate = eventStore.predicateForEvents(withStart: dateRange.start, end: dateRange.end, calendars: calendars)
