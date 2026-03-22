@@ -48,7 +48,7 @@ final class TimetableViewModel {
         do {
             // Authenticate and fetch timetable
             try await uclAPIService.authenticate()
-            let timetable = try await uclAPIService.fetchTimetable(for: startDate)
+            let timetable = try await uclAPIService.fetchTimetable(for: nil)
 
             // Load stored study sessions
             let sessions = try persistenceService.loadSessions()
@@ -71,6 +71,7 @@ final class TimetableViewModel {
             )
 
         } catch {
+            print("Full error: \(error)")
             errorMessage = "Failed to load schedule: \(error.localizedDescription)"
         }
 

@@ -13,6 +13,7 @@
 import Foundation
 import AuthenticationServices
 import UIKit
+import WebKit
 
 class UCLAPIService: NSObject, UCLAPIServiceProtocol {
     
@@ -22,14 +23,17 @@ class UCLAPIService: NSObject, UCLAPIServiceProtocol {
             case decodingError
     }
     
-    private var token : String?
+    private var token: String? {
+        get { UserDefaults.standard.string(forKey: "uclToken") }
+        set { UserDefaults.standard.set(newValue, forKey: "uclToken") }
+    }
     
     private let clientID: String = Bundle.main.infoDictionary?["UCL_CLIENT_ID"] as? String ?? ""
     private let callbackURL: String = Bundle.main.infoDictionary?["UCL_CALLBACK_URL"] as? String ?? ""
     private let clientSecret: String = Bundle.main.infoDictionary?["UCL_CLIENT_SECRET"] as? String ?? ""
-
     
     func authenticate() async throws {
+        guard token == nil else { return }
         var components = URLComponents(string: "https://uclapi.com/oauth/authorise")!
         components.queryItems = [
             URLQueryItem(name: "client_id", value: clientID),
@@ -38,7 +42,7 @@ class UCLAPIService: NSObject, UCLAPIServiceProtocol {
         ]
         let url = components.url!
         
-        let callbackScheme = "timetableapp"
+        let callbackScheme = URL(string: callbackURL)?.scheme ?? "timetableapp"
         
         let code = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
             let session = ASWebAuthenticationSession(url: url, callbackURLScheme: callbackScheme) { callbackURL, error in
@@ -83,79 +87,87 @@ class UCLAPIService: NSObject, UCLAPIServiceProtocol {
     
     private struct TimetableResponse: Codable {
         let ok: Bool
-        let timetable: TimetableWrapper
         
-        struct TimetableWrapper: Codable {
-            let date: [RawEvent]
+        let timetable: [String :[RawEvent]]
+        
+        struct RawEvent: Codable {
+            let start_time: String
+            let end_time: String
+            let session_type_str: String
+            let location: Location
+            let module: Module
+            let contact: String?
             
-            struct RawEvent: Codable {
-                let start_time: String
-                let end_time: String
-                let session_type_str: String
-                let location: Location
-                let module: Module
-                let contact: String
+            struct Location: Codable {
+                let name: String?
+                let coordinates: Coordinates
                 
-                struct Location: Codable {
-                    let name: String
-                    let coordinates: Coordinates
-                    
-                    struct Coordinates: Codable {
-                        let lat: String
-                        let lng: String
-                    }
+                struct Coordinates: Codable {
+                    let lat: String?
+                    let lng: String?
                 }
-                
-                struct Module: Codable {
-                    let module_id: String
-                    let name: String
-                }
+            }
+            
+            struct Module: Codable {
+                let module_id: String?
+                let name: String?
             }
         }
     }
 
     
     
-    func fetchTimetable(for date: Date = Date()) async throws -> [TimetableEntry] {
+    func fetchTimetable(for date: Date? = nil) async throws -> [TimetableEntry] {
         guard let token else { throw UCLAPIError.notAuthenticated }
         
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let dateString = formatter.string(from: date)
+        
         
         var components = URLComponents(string: "https://uclapi.com/timetable/personal")!
-        components.queryItems = [
+        var queryItems = [
             URLQueryItem(name: "client_secret", value: clientSecret),
-            URLQueryItem(name: "date", value: dateString)
+            URLQueryItem(name: "token", value: token)
         ]
+        if let date{
+            formatter.dateFormat = "yyyy-MM-dd"
+            queryItems.append(URLQueryItem(name: "date", value: formatter.string(from: date)))
+        }
+        components.queryItems = queryItems
         
         let url = components.url!
 
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let request = URLRequest(url: url)
         
         let (data, _) = try await URLSession.shared.data(for: request)
-        
+        print(String(data: data, encoding: .utf8) ?? "no data")
         let response = try JSONDecoder().decode(TimetableResponse.self, from: data)
-        let rawEvents = response.timetable.date
+        var rawEvents: [(date: String, event: TimetableResponse.RawEvent)] = []
+
+        for (dateKey, events) in response.timetable {
+            for event in events {
+                rawEvents.append((date: dateKey, event: event))
+            }
+        }
         
-        let isoFormatter = ISO8601DateFormatter()
-        
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
 
         let entries = try rawEvents.map { raw in
-            guard let startTime = isoFormatter.date(from: raw.start_time),
-                  let endTime = isoFormatter.date(from: raw.end_time) else {
+            guard let startTime = formatter.date(from: "\(raw.date) \(raw.event.start_time)"),
+                  let endTime = formatter.date(from: "\(raw.date) \(raw.event.end_time)") else {
                 throw UCLAPIError.decodingError
             }
             return TimetableEntry(
-                moduleName: raw.module.name,
-                moduleCode: raw.module.module_id,
-                lecturerName: raw.contact,
+                moduleName: raw.event.module.name ?? "",
+                moduleCode: raw.event.module.module_id ?? "",
+                lecturerName: raw.event.contact ?? "",
                 startTime: startTime,
                 endTime: endTime,
-                location: raw.location.name,
-                locationCoords: Coordinates(lat: Double(raw.location.coordinates.lat) ?? 0.0, lon: Double(raw.location.coordinates.lng) ?? 0.0),
-                type: .unknown(raw.session_type_str)
+                location: raw.event.location.name ?? "",
+                locationCoords: Coordinates(
+                    lat: Double(raw.event.location.coordinates.lat ?? "0") ?? 0,
+                    lon: Double(raw.event.location.coordinates.lng ?? "0") ?? 0
+                ),
+                type: .unknown(raw.event.session_type_str)
             )
         }
 

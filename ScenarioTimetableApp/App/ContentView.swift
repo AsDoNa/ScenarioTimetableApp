@@ -24,6 +24,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Preferences", systemImage: "gearshape")
                 }
+
+            DebugView()
+                .tabItem {
+                    Label("Debug", systemImage: "ladybug")
+                }
         }
     }
 }
