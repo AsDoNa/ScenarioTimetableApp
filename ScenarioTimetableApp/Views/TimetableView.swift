@@ -89,6 +89,16 @@ struct TimetableView: View {
             }
             .navigationTitle("Timetable")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        Task { await viewModel.refreshWeek() }
+                        }
+                    label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                }
             .alert("Schedule", isPresented: $showScheduleAlert) {
                 Button("OK") { }
             } message: {

@@ -30,7 +30,12 @@ class CalendarService:CalendarServiceProtocol {
     func fetchEvents(for dateRange: DateInterval) async throws -> [CalendarEvent] {
         try await requestCalendarAccess()
         guard hasCalendarAccess else { throw CalendarError.accessDenied }
-        let calendars = eventStore.calendars(for: .event).filter { $0 !== studyCalendar }
+        // Ensure studyCalendar is loaded from UserDefaults before filtering,
+        // so previously exported sessions are never treated as personal events.
+        if studyCalendar == nil, let id = UserDefaults.standard.string(forKey: studyCalendarKey) {
+            studyCalendar = eventStore.calendar(withIdentifier: id)
+        }
+        let calendars = eventStore.calendars(for: .event).filter { $0.title != studyCalendarName }
         let predicate = eventStore.predicateForEvents(withStart: dateRange.start, end: dateRange.end, calendars: calendars)
         let ekEvents = eventStore.events(matching: predicate)
         let calendarEvents = ekEvents.map { ekEvent in
