@@ -246,7 +246,7 @@ struct TimetableView: View {
             Divider()
             HStack(spacing: 12) {
                 Button {
-                    generateSchedule()
+                    Task { await generateSchedule() }
                 } label: {
                     Label("Generate Schedule", systemImage: "sparkles")
                         .font(.subheadline)
@@ -254,10 +254,19 @@ struct TimetableView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isGenerating || taskVM.tasks.filter({ !$0.isComplete }).isEmpty)
+                
+                
 
                 if !(viewModel.weekSchedule?.studySessions.isEmpty ?? true) {
+                    Button {
+                        Task { try? await viewModel.exportStudySessions() }
+                    } label: {
+                        Label("Export to Calendar", systemImage: "tray.and.arrow.up")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.bordered)
                     Button(role: .destructive) {
-                        viewModel.clearStudySessions()
+                        Task { await viewModel.clearStudySessions() }
                     } label: {
                         Label("Clear", systemImage: "trash")
                             .font(.subheadline)
@@ -282,7 +291,7 @@ struct TimetableView: View {
         }
     }
 
-    private func generateSchedule() {
+    private func generateSchedule() async {
         isGenerating = true
 
         let preferences: UserPreferences
@@ -311,7 +320,8 @@ struct TimetableView: View {
             weekStartDate: weekStartDate
         )
 
-        viewModel.saveStudySessions(sessions)
+        await viewModel.saveStudySessions(sessions)
+        
 
         if sessions.isEmpty {
             scheduleAlertMessage = "Could not place any sessions. Try adjusting your preferences or freeing up time."

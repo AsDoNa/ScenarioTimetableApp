@@ -80,25 +80,32 @@ final class TimetableViewModel {
 
     // MARK: - Save Study Sessions
 
-    func saveStudySessions(_ sessions: [StudySession]) {
+    func saveStudySessions(_ sessions: [StudySession]) async {
         do {
             try persistenceService.saveSessions(sessions)
             weekSchedule?.studySessions = sessions
         } catch {
             errorMessage = "Failed to save study sessions"
         }
+        do {
+            guard let dateRange = weekDateRange else { return }
+            try calendarService?.clearStudySessions(for: dateRange)
+            try await calendarService?.exportStudySessions(sessions)
+        } catch {
+            errorMessage = "Failed to export study sessions to calendar"
+        }
+    }
+    
+    func exportStudySessions() async throws {
+        guard let dateRange = weekDateRange else { return }
+        try calendarService?.clearStudySessions(for: dateRange)
+        try await calendarService?.exportStudySessions(weekSchedule?.studySessions ?? [])
     }
 
     // MARK: - Clear Schedule
 
-    func clearStudySessions() {
-        weekSchedule?.studySessions = []
-
-        do {
-            try persistenceService.saveSessions([])
-        } catch {
-            errorMessage = "Failed to clear study sessions"
-        }
+    func clearStudySessions() async {
+        await saveStudySessions([])
     }
 
     // MARK: - Refresh Week
@@ -107,6 +114,14 @@ final class TimetableViewModel {
         guard let start = weekSchedule?.weekStartDate else { return }
         await loadWeekSchedule(startDate: start)
     }
+    
+    // MARK: - Helpers
+    private var weekDateRange: DateInterval? {
+        guard let startDate = weekSchedule?.weekStartDate else { return nil }
+        let endDate = Calendar.current.date(byAdding: .day, value: 7, to: startDate)!
+        return DateInterval(start: startDate, end: endDate)
+    }
+
 }
     // TODO: Implement
     //

@@ -68,6 +68,15 @@ class CalendarService:CalendarServiceProtocol {
     }
 
     
+    func clearStudySessions(for dateRange : DateInterval) throws {
+        let studyCalendar = try getOrCreateStudyCalendar()
+        let events = eventStore.events(matching:eventStore.predicateForEvents(withStart: dateRange.start, end: dateRange.end, calendars: [studyCalendar]))
+        for event in events {
+            try eventStore.remove(event, span:.thisEvent, commit: false)
+        }
+        try eventStore.commit()
+    }
+    
     func exportStudySessions(_ sessions: [StudySession]) async throws {
         guard hasCalendarAccess else { throw CalendarError.accessDenied }
         let calendar = try getOrCreateStudyCalendar()
@@ -77,8 +86,9 @@ class CalendarService:CalendarServiceProtocol {
             event.startDate = session.startTime
             event.endDate = session.endTime
             event.calendar = calendar
-            try eventStore.save(event, span: .thisEvent)
+            try eventStore.save(event, span: .thisEvent, commit:false)
         }
+        try eventStore.commit()
     }
     
 }
