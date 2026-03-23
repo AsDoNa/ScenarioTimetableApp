@@ -121,11 +121,17 @@ struct PreferencesView: View {
                     }
                     .foregroundStyle(.red)
                 }
-                .confirmationDialog("Clear All Data", isPresented: $showClearConfirmation, titleVisibility: .visible) {
-                    Button("Clear All My Data", role: .destructive) {
-                        persistenceService.clearAll()
-                        hasLoaded = false
-                        loadPreferences()
+                .confirmationDialog("Delete All Data", isPresented: $showClearConfirmation, titleVisibility: .visible) {
+                    Button("Delete All My Data", role: .destructive) {
+                        Task {
+                            try? calendarService.deleteStudyCalendar()
+                            persistenceService.clearAll()
+                            hasLoaded = false
+                            loadPreferences()
+                            availableCalendars = await calendarService.availableCalendars()
+                            selectedCalendarIdentifiers = availableCalendars.map { $0.id }
+                            includeCalendarEvents = false
+                        }
                     }
                     Button("Cancel", role: .cancel) { }
                 } message: {
@@ -141,7 +147,7 @@ struct PreferencesView: View {
             .task {
                 loadPreferences()
                 try? await calendarService.requestCalendarAccess()
-                availableCalendars = calendarService.availableCalendars()
+                availableCalendars = await calendarService.availableCalendars()
                 if selectedCalendarIdentifiers.isEmpty {
                     selectedCalendarIdentifiers = availableCalendars.map { $0.id }
                 }

@@ -94,12 +94,6 @@ final class TimetableViewModel {
                 calendarEvents: events
             )
 
-            // Task #2: Auto-generate schedule if there are active tasks
-            let activeTasks = tasks.filter { !$0.isComplete }
-            if !activeTasks.isEmpty {
-                generateSchedule()
-            }
-
         } catch {
             errorMessage = "Failed to load schedule: \(error.localizedDescription)"
         }
@@ -148,7 +142,12 @@ final class TimetableViewModel {
 
     // MARK: - Clear Schedule
 
-    func clearStudySessions() async {
+    func clearStudySessions() {
+        guard let dateRange = weekDateRange else {
+            saveStudySessions([])
+            return
+        }
+        try? calendarService?.clearStudySessions(for: dateRange)
         saveStudySessions([])
     }
 
