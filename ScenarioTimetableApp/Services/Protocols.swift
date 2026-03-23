@@ -7,8 +7,10 @@ import Foundation
 
 protocol CalendarServiceProtocol {
     func requestCalendarAccess() async throws
-    func fetchEvents(for dateRange: DateInterval) async throws -> [CalendarEvent]
+    func availableCalendars() -> [(id: String, title: String)]
+    func fetchEvents(for dateRange: DateInterval, calendars: [String]) async throws -> [CalendarEvent]
     func exportStudySessions(_ sessions: [StudySession]) async throws
+    func clearStudySessions(for dateRange : DateInterval) throws
 }
 
 protocol PersistenceServiceProtocol {
@@ -18,6 +20,7 @@ protocol PersistenceServiceProtocol {
     func loadPreferences() throws -> UserPreferences
     func saveSessions(_ sessions: [StudySession]) throws
     func loadSessions() throws -> [StudySession]
+    func clearAll()
 }
 
 protocol UCLAPIServiceProtocol {

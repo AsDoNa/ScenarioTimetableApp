@@ -68,7 +68,7 @@ enum ScheduleItem: Identifiable {
             case .unknown(let s): return s.isEmpty ? "Class" : s
             }
         case .studySession: return "Study"
-        case .calendarEvent: return "Personal"
+        case .calendarEvent(let e): return e.calendarName
         }
     }
 

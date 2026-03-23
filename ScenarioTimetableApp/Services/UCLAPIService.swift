@@ -23,9 +23,20 @@ class UCLAPIService: NSObject, UCLAPIServiceProtocol {
             case decodingError
     }
     
+    private static let tokenKey = "uclToken"
+
     private var token: String? {
-        get { UserDefaults.standard.string(forKey: "uclToken") }
-        set { UserDefaults.standard.set(newValue, forKey: "uclToken") }
+        get {
+            guard let data = KeychainService.load(key: Self.tokenKey) else { return nil }
+            return String(data: data, encoding: .utf8)
+        }
+        set {
+            if let value = newValue, let data = value.data(using: .utf8) {
+                try? KeychainService.save(key: Self.tokenKey, data: data)
+            } else {
+                try? KeychainService.delete(key: Self.tokenKey)
+            }
+        }
     }
     
     private let clientID: String = Bundle.main.infoDictionary?["UCL_CLIENT_ID"] as? String ?? ""
@@ -34,6 +45,7 @@ class UCLAPIService: NSObject, UCLAPIServiceProtocol {
     
     func authenticate() async throws {
         guard token == nil else { return }
+        print("authenticate called, token exists: \(token != nil)")
         var components = URLComponents(string: "https://uclapi.com/oauth/authorise")!
         components.queryItems = [
             URLQueryItem(name: "client_id", value: clientID),
@@ -139,7 +151,6 @@ class UCLAPIService: NSObject, UCLAPIServiceProtocol {
         let request = URLRequest(url: url)
         
         let (data, _) = try await URLSession.shared.data(for: request)
-        print(String(data: data, encoding: .utf8) ?? "no data")
         let response = try JSONDecoder().decode(TimetableResponse.self, from: data)
         var rawEvents: [(date: String, event: TimetableResponse.RawEvent)] = []
 

@@ -16,17 +16,23 @@ import SwiftUI
 struct PreferencesView: View {
 
     private let persistenceService: PersistenceServiceProtocol = PersistenceService()
-
-    @State private var startTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date())!
-    @State private var endTime = Calendar.current.date(bySettingHour: 17, minute: 0, second: 0, of: Date())!
-    @State private var maxSessionLength = 90
-    @State private var breakDuration = 15
-    @State private var weeklyGoalHours = 20
-    @State private var firstDayOfWeek: UserPreferences.Weekday = .monday
-    @State private var daysOff: Set<UserPreferences.Weekday> = [.saturday]
+    private let calendarService: CalendarServiceProtocol = CalendarService()
+    
+    @State private var startTime = UserPreferences.default.preferredStudyStartTime
+    @State private var endTime = UserPreferences.default.preferredStudyEndTime
+    @State private var maxSessionLength = UserPreferences.default.maxSessionLength
+    @State private var breakDuration = UserPreferences.default.minBreakBetweenSessions
+    @State private var weeklyGoalHours = UserPreferences.default.weeklyStudyGoalTime / 60
+    @State private var firstDayOfWeek = UserPreferences.default.firstDayOfWeek
+    @State private var daysOff = Set(UserPreferences.default.preferredDaysOff)
+    @State private var includeCalendarEvents = UserPreferences.default.includeCalendarEvents
+    @State private var selectedCalendarIdentifiers = UserPreferences.default.selectedCalendarIdentifiers
 
     @State private var showSavedAlert = false
     @State private var hasLoaded = false
+    @State private var showClearConfirmation = false
+    
+    @State private var availableCalendars: [(id: String, title: String)] = []
 
     private let allWeekdays: [UserPreferences.Weekday] = [
         .monday, .tuesday, .wednesday, .thursday, .friday, .saturday, .sunday
@@ -82,6 +88,12 @@ struct PreferencesView: View {
                         Text("Sunday").tag(UserPreferences.Weekday.sunday)
                     }
                 }
+                Section {
+                    Toggle("Get Calendar Events", isOn: $includeCalendarEvents)
+                }
+                if includeCalendarEvents {
+                    calendarSection
+                }
 
                 Section {
                     Button {
@@ -95,6 +107,30 @@ struct PreferencesView: View {
                         }
                     }
                 }
+                
+                Section {
+                    Button(role: .destructive) {
+                        showClearConfirmation = true
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Label("Delete All My Data", systemImage: "trash")
+                                .fontWeight(.semibold)
+                            Spacer()
+                        }
+                    }
+                    .foregroundStyle(.red)
+                }
+                .confirmationDialog("Clear All Data", isPresented: $showClearConfirmation, titleVisibility: .visible) {
+                    Button("Clear All My Data", role: .destructive) {
+                        persistenceService.clearAll()
+                        hasLoaded = false
+                        loadPreferences()
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("This will delete all your tasks, sessions, and preferences. This cannot be undone.")
+                }
             }
             .navigationTitle("Preferences")
             .alert("Saved", isPresented: $showSavedAlert) {
@@ -104,9 +140,37 @@ struct PreferencesView: View {
             }
             .task {
                 loadPreferences()
+                try? await calendarService.requestCalendarAccess()
+                availableCalendars = calendarService.availableCalendars()
+                if selectedCalendarIdentifiers.isEmpty {
+                    selectedCalendarIdentifiers = availableCalendars.map { $0.id }
+                }
             }
         }
     }
+    
+    private var calendarSection: some View {
+        Section {
+            ForEach(availableCalendars, id: \.id) { cal in
+                Toggle(cal.title, isOn: Binding(
+                    get: { selectedCalendarIdentifiers.contains(cal.id) },
+                    set: { isOn in
+                        if isOn {
+                            selectedCalendarIdentifiers.append(cal.id)
+                        } else {
+                            selectedCalendarIdentifiers.removeAll { $0 == cal.id }
+                        }
+                    }
+                ))
+            }
+        } header: {
+            Text("Calendars to Include")
+        } footer: {
+            Text("Events from selected calendars will be treated as busy time when scheduling.")
+        }
+    }
+
+
 
     // MARK: - Persistence
 
@@ -121,6 +185,8 @@ struct PreferencesView: View {
             weeklyGoalHours = prefs.weeklyStudyGoalTime / 60
             firstDayOfWeek = prefs.firstDayOfWeek
             daysOff = Set(prefs.preferredDaysOff)
+            selectedCalendarIdentifiers = prefs.selectedCalendarIdentifiers
+            includeCalendarEvents = prefs.includeCalendarEvents
         } catch {
             // No saved preferences — defaults are already set
         }
@@ -135,7 +201,9 @@ struct PreferencesView: View {
             minBreakBetweenSessions: breakDuration,
             preferredDaysOff: Array(daysOff),
             weeklyStudyGoalTime: weeklyGoalHours * 60,
-            firstDayOfWeek: firstDayOfWeek
+            firstDayOfWeek: firstDayOfWeek,
+            selectedCalendarIdentifiers: selectedCalendarIdentifiers,
+            includeCalendarEvents: includeCalendarEvents
         )
         do {
             try persistenceService.savePreferences(prefs)

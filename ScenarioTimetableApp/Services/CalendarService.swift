@@ -23,20 +23,21 @@ class CalendarService:CalendarServiceProtocol {
     }
     
     func requestCalendarAccess() async throws {
-        print("Calendar access granted: \(hasCalendarAccess)")
         hasCalendarAccess = try await eventStore.requestFullAccessToEvents()
     }
     
-    func fetchEvents(for dateRange: DateInterval) async throws -> [CalendarEvent] {
+    func availableCalendars() -> [(id: String, title: String)] {
+        if studyCalendar == nil, let id = UserDefaults.standard.string(forKey: studyCalendarKey) {
+                    studyCalendar = eventStore.calendar(withIdentifier: id)
+        }
+        return eventStore.calendars(for: .event).filter { $0 !== studyCalendar }.map { (id: $0.calendarIdentifier, title: $0.title) }
+    }
+    
+    func fetchEvents(for dateRange: DateInterval, calendars: [String]) async throws -> [CalendarEvent] {
         try await requestCalendarAccess()
         guard hasCalendarAccess else { throw CalendarError.accessDenied }
-        // Ensure studyCalendar is loaded from UserDefaults before filtering,
-        // so previously exported sessions are never treated as personal events.
-        if studyCalendar == nil, let id = UserDefaults.standard.string(forKey: studyCalendarKey) {
-            studyCalendar = eventStore.calendar(withIdentifier: id)
-        }
-        let calendars = eventStore.calendars(for: .event).filter { $0.title != studyCalendarName }
-        let predicate = eventStore.predicateForEvents(withStart: dateRange.start, end: dateRange.end, calendars: calendars)
+        let filteredCalendars = eventStore.calendars(for: .event).filter { calendars.contains($0.calendarIdentifier) }
+        let predicate = eventStore.predicateForEvents(withStart: dateRange.start, end: dateRange.end, calendars: filteredCalendars)
         let ekEvents = eventStore.events(matching: predicate)
         let calendarEvents = ekEvents.map { ekEvent in
             CalendarEvent(
@@ -46,7 +47,9 @@ class CalendarService:CalendarServiceProtocol {
                 location: ekEvent.structuredLocation?.title,
                 locationCoords: ekEvent.structuredLocation?.geoLocation.map { location in Coordinates(
                     lat: location.coordinate.latitude, lon: location.coordinate.longitude
-            )})
+                )},
+                calendarName: ekEvent.calendar.title
+            )
         }
         return calendarEvents
     }

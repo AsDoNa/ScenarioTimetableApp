@@ -13,4 +13,5 @@ struct CalendarEvent: Identifiable, Codable {
     let endTime: Date
     let location: String?
     let locationCoords: Coordinates?
+    let calendarName: String
 }

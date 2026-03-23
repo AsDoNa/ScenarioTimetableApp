@@ -15,7 +15,6 @@ struct TimetableView: View {
 
     // Each view creates its own dependencies so that ContentView
     // can call TimetableView() with no parameters.
-    // During integration (Mon 23rd), Adry can inject shared VMs instead.
     @State private var viewModel = TimetableViewModel(
         uclAPIService: UCLAPIService(),
         persistenceService: PersistenceService(),
@@ -28,9 +27,11 @@ struct TimetableView: View {
     @State private var isGenerating = false
     @State private var showScheduleAlert = false
     @State private var scheduleAlertMessage = ""
+    @State private var selectedSession: StudySession?
+    @State private var selectedEntry: TimetableEntry?
+    @State private var isExporting = false
 
     private let calendar = Calendar.current
-    private let persistence = PersistenceService()
 
     // MARK: - Computed helpers
 
@@ -90,6 +91,7 @@ struct TimetableView: View {
             .navigationTitle("Timetable")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if viewModel.weekSchedule != nil {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         Task { await viewModel.refreshWeek() }
@@ -99,13 +101,21 @@ struct TimetableView: View {
                         }
                     }
                 }
+            }
             .alert("Schedule", isPresented: $showScheduleAlert) {
                 Button("OK") { }
             } message: {
                 Text(scheduleAlertMessage)
             }
+            .sheet(item: $selectedSession) { session in
+                StudySessionDetailView(session: session, viewModel: viewModel)
+            }
+            .sheet(item: $selectedEntry) { entry in
+                TimetableEntryDetailView(entry: entry)
+            }
             .task {
                 await taskVM.loadTasks()
+                await viewModel.loadWeekSchedule(startDate: weekStartDate)
             }
         }
     }
@@ -184,7 +194,12 @@ struct TimetableView: View {
         ScrollView {
             LazyVStack(spacing: 8) {
                 ForEach(itemsForSelectedDay) { item in
-                    TimeSlotView(item: item)
+                    Button {
+                        handleItemTap(item)
+                    } label: {
+                        TimeSlotView(item: item)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal)
@@ -257,14 +272,20 @@ struct TimetableView: View {
                 
                 
 
+                // Task #7: Export to Calendar button
                 if !(viewModel.weekSchedule?.studySessions.isEmpty ?? true) {
                     Button {
-                        Task { try? await viewModel.exportStudySessions() }
+                        isExporting = true
+                        Task {
+                            try? await viewModel.exportStudySessions()
+                            isExporting = false
+                        }
                     } label: {
                         Label("Export to Calendar", systemImage: "tray.and.arrow.up")
                             .font(.subheadline)
                     }
                     .buttonStyle(.bordered)
+                    .disabled(isExporting)
                     Button(role: .destructive) {
                         Task { await viewModel.clearStudySessions() }
                     } label: {
@@ -282,6 +303,17 @@ struct TimetableView: View {
 
     // MARK: - Actions
 
+    private func handleItemTap(_ item: ScheduleItem) {
+        switch item {
+        case .studySession(let session):
+            selectedSession = session
+        case .timetableEntry(let entry):
+            selectedEntry = entry
+        case .calendarEvent:
+            break
+        }
+    }
+
     private func shiftWeek(by offset: Int) {
         guard let newStart = calendar.date(byAdding: .weekOfYear, value: offset, to: weekStartDate) else { return }
         weekStartDate = newStart
@@ -293,36 +325,10 @@ struct TimetableView: View {
 
     private func generateSchedule() async {
         isGenerating = true
+        viewModel.reloadTasks()
+        viewModel.generateSchedule()
 
-        let preferences: UserPreferences
-        do {
-            preferences = try persistence.loadPreferences()
-        } catch {
-            preferences = defaultPreferences()
-        }
-
-        let timetable = viewModel.weekSchedule?.timetableEntries ?? []
-        let calendarEvents = viewModel.weekSchedule?.calendarEvents ?? []
-        let tasks = taskVM.tasks.filter { !$0.isComplete }
-
-        guard !tasks.isEmpty else {
-            scheduleAlertMessage = "No active tasks to schedule. Add some tasks first."
-            showScheduleAlert = true
-            isGenerating = false
-            return
-        }
-
-        let sessions = SchedulingAlgorithm.generateSchedule(
-            timetable: timetable,
-            calendarEvents: calendarEvents,
-            tasks: tasks,
-            preferences: preferences,
-            weekStartDate: weekStartDate
-        )
-
-        await viewModel.saveStudySessions(sessions)
-        
-
+        let sessions = viewModel.weekSchedule?.studySessions ?? []
         if sessions.isEmpty {
             scheduleAlertMessage = "Could not place any sessions. Try adjusting your preferences or freeing up time."
         } else {
@@ -366,19 +372,5 @@ struct TimetableView: View {
         // weekday: 1 = Sun, 2 = Mon, … 7 = Sat → offset to Monday
         let daysToSubtract = (weekday + 5) % 7
         return cal.date(byAdding: .day, value: -daysToSubtract, to: today)!
-    }
-
-    private func defaultPreferences() -> UserPreferences {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        return UserPreferences(
-            preferredStudyStartTime: cal.date(bySettingHour: 9, minute: 0, second: 0, of: today)!,
-            preferredStudyEndTime: cal.date(bySettingHour: 17, minute: 0, second: 0, of: today)!,
-            maxSessionLength: 90,
-            minBreakBetweenSessions: 15,
-            preferredDaysOff: [.saturday],
-            weeklyStudyGoalTime: 20 * 60,
-            firstDayOfWeek: .monday
-        )
     }
 }
