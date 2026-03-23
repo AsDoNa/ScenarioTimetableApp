@@ -22,6 +22,10 @@ final class TimetableViewModel {
     var errorMessage: String?
     private(set) var tasks: [StudyTask] = []
 
+    /// Full-range data (today → latest deadline) used for month view and multi-week scheduling.
+    private(set) var allTimetableEntries: [TimetableEntry] = []
+    private(set) var allCalendarEvents: [CalendarEvent] = []
+
     // MARK: - Dependencies
 
     private let uclAPIService: UCLAPIServiceProtocol
@@ -62,7 +66,10 @@ final class TimetableViewModel {
             try await uclAPIService.authenticate()
             let allEntries = try await uclAPIService.fetchTimetable(for: nil)
 
-            // Task #3: Filter entries to only the selected week
+            // Store full-range timetable entries for multi-week scheduling
+            allTimetableEntries = allEntries
+
+            // Filter entries to only the selected week for display
             let weekEnd = startDate.addingTimeInterval(7 * 24 * 60 * 60)
             let timetable = allEntries.filter { entry in
                 entry.startTime >= startDate && entry.startTime < weekEnd
@@ -74,27 +81,38 @@ final class TimetableViewModel {
             // Load tasks for scheduling
             tasks = try persistenceService.loadTasks()
 
-            // Optionally load calendar events
-            var events: [CalendarEvent] = []
+            // Fetch calendar events for full range (today → latest task deadline)
+            var fullRangeEvents: [CalendarEvent] = []
             if let calendarService {
-                let range = DateInterval(
-                    start: startDate,
-                    duration: 7 * 24 * 60 * 60
+                let today = Calendar.current.startOfDay(for: Date())
+                let latestDeadline = tasks.filter({ !$0.isComplete }).compactMap({ $0.deadline }).max()
+                let rangeEnd = latestDeadline ?? startDate.addingTimeInterval(7 * 24 * 60 * 60)
+                let fullRange = DateInterval(
+                    start: today,
+                    end: max(rangeEnd, today.addingTimeInterval(7 * 24 * 60 * 60))
                 )
                 let preferences = loadPreferencesOrDefault()
                 if preferences.includeCalendarEvents {
-                    events = try await calendarService.fetchEvents(for: range, calendars:preferences.selectedCalendarIdentifiers)
+                    fullRangeEvents = try await calendarService.fetchEvents(for: fullRange, calendars: preferences.selectedCalendarIdentifiers)
                 }
+            }
+
+            // Store full-range calendar events for multi-week scheduling
+            allCalendarEvents = fullRangeEvents
+
+            // Filter calendar events to viewed week for display
+            let weekEvents = fullRangeEvents.filter { event in
+                event.startTime >= startDate && event.startTime < weekEnd
             }
 
             weekSchedule = WeekSchedule(
                 weekStartDate: startDate,
                 timetableEntries: timetable,
                 studySessions: sessions,
-                calendarEvents: events
+                calendarEvents: weekEvents
             )
 
-            // Task #2: Auto-generate schedule if there are active tasks
+            // Auto-generate schedule if there are active tasks
             let activeTasks = tasks.filter { !$0.isComplete }
             if !activeTasks.isEmpty {
                 generateSchedule()
@@ -110,20 +128,22 @@ final class TimetableViewModel {
     // MARK: - Generate Schedule (Task #2)
 
     /// Runs the scheduling algorithm and saves the result.
+    /// Always generates from today, regardless of the viewed week.
     func generateSchedule() {
-        guard let schedule = weekSchedule else { return }
+        guard weekSchedule != nil else { return }
 
         let preferences = loadPreferencesOrDefault()
         let activeTasks = tasks.filter { !$0.isComplete }
 
         guard !activeTasks.isEmpty else { return }
 
+        // Use full-range data and start from today
         let sessions = SchedulingAlgorithm.generateSchedule(
-            timetable: schedule.timetableEntries,
-            calendarEvents: schedule.calendarEvents,
+            timetable: allTimetableEntries,
+            calendarEvents: allCalendarEvents,
             tasks: activeTasks,
             preferences: preferences,
-            weekStartDate: schedule.weekStartDate
+            startDate: Calendar.current.startOfDay(for: Date())
         )
 
         saveStudySessions(sessions)
@@ -139,7 +159,7 @@ final class TimetableViewModel {
             errorMessage = "Failed to save study sessions"
         }
     }
-    
+
     func exportStudySessions() async throws {
         guard let dateRange = weekDateRange else { return }
         try calendarService?.clearStudySessions(for: dateRange)
@@ -158,7 +178,7 @@ final class TimetableViewModel {
         guard let start = weekSchedule?.weekStartDate else { return }
         await loadWeekSchedule(startDate: start)
     }
-    
+
     // MARK: - Helpers
     private var weekDateRange: DateInterval? {
         guard let startDate = weekSchedule?.weekStartDate else { return nil }

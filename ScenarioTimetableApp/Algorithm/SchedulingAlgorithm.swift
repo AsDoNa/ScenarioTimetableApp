@@ -10,9 +10,6 @@ import Foundation
 
 class SchedulingAlgorithm {
 
-    // constants
-    private static let MIN_SESSION_MINUTES = 15
-
     private struct DayState {
         let date: Date
         var freeSlots: [TimeSlot]
@@ -28,26 +25,37 @@ class SchedulingAlgorithm {
 
     // Main entry point:
     static func generateSchedule(
-        timetable: [TimetableEntry], 
+        timetable: [TimetableEntry],
         calendarEvents: [CalendarEvent],
-        tasks: [StudyTask], 
+        tasks: [StudyTask],
         preferences: UserPreferences,
-        weekStartDate: Date
+        startDate: Date
         ) -> [StudySession] {
-            let activeDays = buildActiveDays(weekStart: weekStartDate, daysOff: preferences.preferredDaysOff)
-            guard !activeDays.isEmpty else { return [] }
-
-            var queue = buildDayQueue(
-                activeDays: activeDays, 
-                timetable: timetable, 
-                calendarEvents: calendarEvents, 
-                preferences: preferences
-            )
-
             let sortedTasks = filterAndSortTasks(tasks)
             guard !sortedTasks.isEmpty else { return [] }
             guard preferences.maxSessionLength > 0,
                   preferences.minBreakBetweenSessions >= 0 else { return [] }
+
+            let minSessionMinutes = preferences.minSessionLength
+
+            // Compute end date from latest task deadline
+            guard let latestDeadline = sortedTasks.map(\.deadline).max() else { return [] }
+            let endDate = latestDeadline
+
+            let activeDays = buildActiveDays(
+                startDate: startDate,
+                endDate: endDate,
+                daysOff: preferences.preferredDaysOff
+            )
+            guard !activeDays.isEmpty else { return [] }
+
+            var queue = buildDayQueue(
+                activeDays: activeDays,
+                timetable: timetable,
+                calendarEvents: calendarEvents,
+                preferences: preferences,
+                minSessionMinutes: minSessionMinutes
+            )
 
             var allSessions: [StudySession] = []
 
@@ -55,7 +63,11 @@ class SchedulingAlgorithm {
                 var remaining = task.estimatedTime - task.completedTime
 
                 while remaining > 0 {
-                    guard let idx = pickLeastLoadedIndex(in: queue, minimumMinutes: MIN_SESSION_MINUTES)
+                    guard let idx = pickLeastLoadedIndex(
+                        in: queue,
+                        minimumMinutes: minSessionMinutes,
+                        beforeDate: task.deadline
+                    )
                     else { break }
 
                     guard let session = placeNextSession(
@@ -63,7 +75,8 @@ class SchedulingAlgorithm {
                         maxSessionMinutes: min(remaining, preferences.maxSessionLength),
                         on: idx,
                         in: &queue,
-                        minBreak: preferences.minBreakBetweenSessions
+                        minBreak: preferences.minBreakBetweenSessions,
+                        minSessionMinutes: minSessionMinutes
                         )
                     else { break }
 
@@ -80,11 +93,12 @@ class SchedulingAlgorithm {
         maxSessionMinutes: Int,
         on dayIndex: Int,
         in queue: inout [DayState],
-        minBreak: Int
+        minBreak: Int,
+        minSessionMinutes: Int
     ) -> StudySession? {
         // Find the first free slot that is large enough to fit the session
         guard let slotIndex = queue[dayIndex].freeSlots.firstIndex(where: { slot in
-            Int(slot.endTime.timeIntervalSince(slot.startTime) / 60) >= MIN_SESSION_MINUTES
+            Int(slot.endTime.timeIntervalSince(slot.startTime) / 60) >= minSessionMinutes
         }) else { return nil }
 
         // Get the slot and compute the session length
@@ -106,7 +120,7 @@ class SchedulingAlgorithm {
         let newSlotStart     = sessionEnd.addingTimeInterval(TimeInterval(minBreak * 60))
         let remainingMinutes = Int(slot.endTime.timeIntervalSince(newSlotStart) / 60)
 
-        if remainingMinutes >= MIN_SESSION_MINUTES {
+        if remainingMinutes >= minSessionMinutes {
             queue[dayIndex].freeSlots[slotIndex] = TimeSlot(startTime: newSlotStart, endTime: slot.endTime)
         } else {
             queue[dayIndex].freeSlots.remove(at: slotIndex)
@@ -115,14 +129,15 @@ class SchedulingAlgorithm {
         queue[dayIndex].scheduledMinutes += sessionLen
         return session
     }
-    
+
     private static func pickLeastLoadedIndex(
         in queue: [DayState],
-        minimumMinutes: Int
+        minimumMinutes: Int,
+        beforeDate: Date
     ) -> Int? {
         queue
             .enumerated()
-            .filter { $0.element.hasCapacity(minimumMinutes: minimumMinutes) }
+            .filter { $0.element.hasCapacity(minimumMinutes: minimumMinutes) && $0.element.date < beforeDate }
             .min { $0.element.scheduledMinutes < $1.element.scheduledMinutes }?
             .offset
     }
@@ -132,6 +147,7 @@ class SchedulingAlgorithm {
         timetable: [TimetableEntry],
         calendarEvents: [CalendarEvent],
         preferences: UserPreferences,
+        minSessionMinutes: Int,
         calendar: Calendar = .current
     ) -> [DayState] {
         activeDays.compactMap { day in
@@ -148,25 +164,33 @@ class SchedulingAlgorithm {
             guard let window = applyWorkingWindow(to: day, prefs: preferences, calendar: calendar)
             else { return nil }
 
-            let slots = computeFreeSlots(window: window, blocked: allBlocked)
+            let slots = computeFreeSlots(window: window, blocked: allBlocked, minSessionMinutes: minSessionMinutes)
 
             return DayState(date: day, freeSlots: slots, scheduledMinutes: 0)
         }
     }
 
-    
-    // Helper function to build the active days array:
+
+    // Helper function to build the active days array (multi-week):
     static func buildActiveDays(
-        weekStart: Date,
+        startDate: Date,
+        endDate: Date,
         daysOff: [UserPreferences.Weekday],
         calendar: Calendar = .current
     ) -> [Date] {
-        (0..<7).compactMap { offset -> Date? in
-            guard let day = calendar.date(byAdding: .day, value: offset, to: weekStart)
-            else { return nil }
-            let weekday = weekdayEnum(from: day, calendar: calendar)
-            return daysOff.contains(weekday) ? nil : day
+        var days: [Date] = []
+        var current = calendar.startOfDay(for: startDate)
+        let end = calendar.startOfDay(for: endDate)
+
+        while current < end {
+            let weekday = weekdayEnum(from: current, calendar: calendar)
+            if !daysOff.contains(weekday) {
+                days.append(current)
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: current) else { break }
+            current = next
         }
+        return days
     }
 
     // Helper function to get the weekday enum from a date:
@@ -234,7 +258,8 @@ class SchedulingAlgorithm {
     // Helper function to compute the free slots:
     static func computeFreeSlots(
         window: (windowStart: Date, windowEnd: Date),
-        blocked: [(start: Date, end: Date)]  // intervals that are already merged and sorted
+        blocked: [(start: Date, end: Date)],  // intervals that are already merged and sorted
+        minSessionMinutes: Int
     ) -> [TimeSlot] {
 
         var slots: [TimeSlot] = []
@@ -249,7 +274,7 @@ class SchedulingAlgorithm {
             if pointer < blockStart {
                 // Gap between pointer and this block
                 let gapMinutes = Int(blockStart.timeIntervalSince(pointer) / 60)
-                if gapMinutes >= MIN_SESSION_MINUTES {
+                if gapMinutes >= minSessionMinutes {
                     slots.append(TimeSlot(startTime: pointer, endTime: blockStart))
                 }
             }
@@ -260,7 +285,7 @@ class SchedulingAlgorithm {
         // Trailing gap between last block and end of window
         if pointer < window.windowEnd {
             let gapMinutes = Int(window.windowEnd.timeIntervalSince(pointer) / 60)
-            if gapMinutes >= MIN_SESSION_MINUTES {
+            if gapMinutes >= minSessionMinutes {
                 slots.append(TimeSlot(startTime: pointer, endTime: window.windowEnd))
             }
         }

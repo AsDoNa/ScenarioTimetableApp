@@ -16,7 +16,7 @@ struct UserPreferences: Codable {
         case friday
         case saturday
     }
-    
+
     static var `default`: UserPreferences {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
@@ -29,10 +29,11 @@ struct UserPreferences: Codable {
             weeklyStudyGoalTime: 20 * 60,
             firstDayOfWeek: .monday,
             selectedCalendarIdentifiers: [],
-            includeCalendarEvents: true
+            includeCalendarEvents: true,
+            minSessionLength: 30
         )
     }
-    
+
     var preferredStudyStartTime: Date
     var preferredStudyEndTime: Date
     var maxSessionLength: Int // Minutes
@@ -42,6 +43,43 @@ struct UserPreferences: Codable {
     var firstDayOfWeek: Weekday
     var selectedCalendarIdentifiers: [String]
     var includeCalendarEvents: Bool
-    
-    
+    var minSessionLength: Int // Minutes
+
+    init(
+        preferredStudyStartTime: Date,
+        preferredStudyEndTime: Date,
+        maxSessionLength: Int,
+        minBreakBetweenSessions: Int,
+        preferredDaysOff: [Weekday],
+        weeklyStudyGoalTime: Int,
+        firstDayOfWeek: Weekday,
+        selectedCalendarIdentifiers: [String] = [],
+        includeCalendarEvents: Bool = true,
+        minSessionLength: Int = 30
+    ) {
+        self.preferredStudyStartTime = preferredStudyStartTime
+        self.preferredStudyEndTime = preferredStudyEndTime
+        self.maxSessionLength = maxSessionLength
+        self.minBreakBetweenSessions = minBreakBetweenSessions
+        self.preferredDaysOff = preferredDaysOff
+        self.weeklyStudyGoalTime = weeklyStudyGoalTime
+        self.firstDayOfWeek = firstDayOfWeek
+        self.selectedCalendarIdentifiers = selectedCalendarIdentifiers
+        self.includeCalendarEvents = includeCalendarEvents
+        self.minSessionLength = minSessionLength
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        preferredStudyStartTime = try container.decode(Date.self, forKey: .preferredStudyStartTime)
+        preferredStudyEndTime = try container.decode(Date.self, forKey: .preferredStudyEndTime)
+        maxSessionLength = try container.decode(Int.self, forKey: .maxSessionLength)
+        minBreakBetweenSessions = try container.decode(Int.self, forKey: .minBreakBetweenSessions)
+        preferredDaysOff = try container.decode([Weekday].self, forKey: .preferredDaysOff)
+        weeklyStudyGoalTime = try container.decode(Int.self, forKey: .weeklyStudyGoalTime)
+        firstDayOfWeek = try container.decode(Weekday.self, forKey: .firstDayOfWeek)
+        selectedCalendarIdentifiers = try container.decodeIfPresent([String].self, forKey: .selectedCalendarIdentifiers) ?? []
+        includeCalendarEvents = try container.decodeIfPresent(Bool.self, forKey: .includeCalendarEvents) ?? true
+        minSessionLength = try container.decodeIfPresent(Int.self, forKey: .minSessionLength) ?? 30
+    }
+}

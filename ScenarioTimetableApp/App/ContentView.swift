@@ -7,14 +7,22 @@
 import SwiftUI
 
 struct ContentView: View {
+
+    @State private var timetableVM = TimetableViewModel(
+        uclAPIService: UCLAPIService(),
+        persistenceService: PersistenceService(),
+        calendarService: CalendarService()
+    )
+    @State private var taskVM = TaskViewModel(persistenceService: PersistenceService())
+
     var body: some View {
         TabView {
-            TimetableView()
+            TimetableView(viewModel: timetableVM, taskVM: taskVM)
                 .tabItem {
                     Label("Timetable", systemImage: "calendar")
                 }
 
-            TaskListView()
+            TaskListView(viewModel: taskVM, timetableVM: timetableVM)
                 .tabItem {
                     Label("Tasks", systemImage: "list.bullet")
                 }
