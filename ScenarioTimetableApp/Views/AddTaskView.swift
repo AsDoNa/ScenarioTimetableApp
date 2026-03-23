@@ -1,7 +1,7 @@
-// MARK: - Add Task View
+// MARK: - Add / Edit Task View
 // Owner: Josh
 //
-// A form for creating a new study task.
+// A form for creating or editing a study task.
 // Fields:
 // - Task title (text)
 // - Subject (text)
@@ -10,12 +10,14 @@
 // - Priority (segmented control: High / Medium / Low)
 // - Estimated hours & minutes (steppers)
 //
-// Submits to TaskViewModel.addTask()
+// Submits to TaskViewModel.addTask() or .updateTask()
 
 import SwiftUI
 
 struct AddTaskView: View {
     var viewModel: TaskViewModel
+    var taskToEdit: StudyTask?
+
     @Environment(\.dismiss) private var dismiss
 
     @State private var title = ""
@@ -25,6 +27,8 @@ struct AddTaskView: View {
     @State private var priority: StudyTask.Priority = .medium
     @State private var estimatedHours = 2
     @State private var estimatedMinutes = 0
+
+    private var isEditing: Bool { taskToEdit != nil }
 
     private var isValid: Bool {
         !title.trimmingCharacters(in: .whitespaces).isEmpty
@@ -63,7 +67,7 @@ struct AddTaskView: View {
                     }
                 }
             }
-            .navigationTitle("New Task")
+            .navigationTitle(isEditing ? "Edit Task" : "New Task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -73,30 +77,50 @@ struct AddTaskView: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        addTask()
+                    Button(isEditing ? "Save" : "Add") {
+                        saveTask()
                     }
                     .disabled(!isValid)
                     .fontWeight(.semibold)
                 }
             }
+            .onAppear {
+                if let task = taskToEdit {
+                    title = task.title
+                    subject = task.subject
+                    moduleCode = task.moduleCode ?? ""
+                    deadline = task.deadline
+                    priority = task.priority
+                    estimatedHours = task.estimatedTime / 60
+                    estimatedMinutes = task.estimatedTime % 60
+                }
+            }
         }
     }
 
-    private func addTask() {
+    private func saveTask() {
         let totalMinutes = estimatedHours * 60 + estimatedMinutes
-        let task = StudyTask(
-            title: title.trimmingCharacters(in: .whitespaces),
-            subject: subject.trimmingCharacters(in: .whitespaces),
-            moduleCode: moduleCode.isEmpty ? nil : moduleCode.trimmingCharacters(in: .whitespaces),
-            deadline: deadline,
-            priority: priority,
-            estimatedTime: totalMinutes,
-            completedTime: 0,
-            isComplete: false
-        )
-        Task {
-            await viewModel.addTask(task)
+
+        if var existing = taskToEdit {
+            existing.title = title.trimmingCharacters(in: .whitespaces)
+            existing.subject = subject.trimmingCharacters(in: .whitespaces)
+            existing.moduleCode = moduleCode.isEmpty ? nil : moduleCode.trimmingCharacters(in: .whitespaces)
+            existing.deadline = deadline
+            existing.priority = priority
+            existing.estimatedTime = totalMinutes
+            Task { await viewModel.updateTask(existing) }
+        } else {
+            let task = StudyTask(
+                title: title.trimmingCharacters(in: .whitespaces),
+                subject: subject.trimmingCharacters(in: .whitespaces),
+                moduleCode: moduleCode.isEmpty ? nil : moduleCode.trimmingCharacters(in: .whitespaces),
+                deadline: deadline,
+                priority: priority,
+                estimatedTime: totalMinutes,
+                completedTime: 0,
+                isComplete: false
+            )
+            Task { await viewModel.addTask(task) }
         }
         dismiss()
     }

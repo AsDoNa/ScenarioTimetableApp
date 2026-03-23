@@ -23,7 +23,6 @@ class CalendarService:CalendarServiceProtocol {
     }
     
     func requestCalendarAccess() async throws {
-        print("Calendar access granted: \(hasCalendarAccess)")
         hasCalendarAccess = try await eventStore.requestFullAccessToEvents()
     }
     

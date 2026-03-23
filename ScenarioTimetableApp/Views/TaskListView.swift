@@ -5,7 +5,8 @@
 // Features:
 // - Sort/filter by deadline, priority, title
 // - Swipe to delete
-// - Completion toggle
+// - Tap row to edit task
+// - Leading swipe to toggle completion
 // - "Add Task" button -> navigates to AddTaskView
 //
 // Binds to TaskViewModel for data.
@@ -16,6 +17,7 @@ struct TaskListView: View {
 
     @State private var viewModel = TaskViewModel(persistenceService: PersistenceService())
     @State private var showAddTask = false
+    @State private var taskToEdit: StudyTask?
     @State private var sortBy: SortOption = .deadline
 
     enum SortOption: String, CaseIterable {
@@ -102,6 +104,9 @@ struct TaskListView: View {
             .sheet(isPresented: $showAddTask) {
                 AddTaskView(viewModel: viewModel)
             }
+            .sheet(item: $taskToEdit) { task in
+                AddTaskView(viewModel: viewModel, taskToEdit: task)
+            }
             .task {
                 await viewModel.loadTasks()
             }
@@ -135,6 +140,10 @@ struct TaskListView: View {
                         TaskRowView(task: task) {
                             Task { await viewModel.toggleComplete(task) }
                         }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            taskToEdit = task
+                        }
                     }
                     .onDelete { offsets in
                         for index in offsets {
@@ -150,6 +159,10 @@ struct TaskListView: View {
                     ForEach(completedTasks) { task in
                         TaskRowView(task: task) {
                             Task { await viewModel.toggleComplete(task) }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            taskToEdit = task
                         }
                     }
                     .onDelete { offsets in
