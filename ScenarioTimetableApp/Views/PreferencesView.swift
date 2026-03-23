@@ -17,11 +17,12 @@ struct PreferencesView: View {
 
     private let persistenceService: PersistenceServiceProtocol = PersistenceService()
     private let calendarService: CalendarServiceProtocol = CalendarService()
-    
+
     @State private var startTime = UserPreferences.default.preferredStudyStartTime
     @State private var endTime = UserPreferences.default.preferredStudyEndTime
     @State private var maxSessionLength = UserPreferences.default.maxSessionLength
     @State private var breakDuration = UserPreferences.default.minBreakBetweenSessions
+    @State private var minSessionLength = UserPreferences.default.minSessionLength
     @State private var weeklyGoalHours = UserPreferences.default.weeklyStudyGoalTime / 60
     @State private var firstDayOfWeek = UserPreferences.default.firstDayOfWeek
     @State private var daysOff = Set(UserPreferences.default.preferredDaysOff)
@@ -31,7 +32,7 @@ struct PreferencesView: View {
     @State private var showSavedAlert = false
     @State private var hasLoaded = false
     @State private var showClearConfirmation = false
-    
+
     @State private var availableCalendars: [(id: String, title: String)] = []
 
     private let allWeekdays: [UserPreferences.Weekday] = [
@@ -52,6 +53,7 @@ struct PreferencesView: View {
 
                 Section {
                     Stepper("Max session: \(maxSessionLength) min", value: $maxSessionLength, in: 15...240, step: 15)
+                    Stepper("Min session: \(minSessionLength) min", value: $minSessionLength, in: 10...60, step: 5)
                     Stepper("Break between: \(breakDuration) min", value: $breakDuration, in: 5...60, step: 5)
                 } header: {
                     Text("Session Settings")
@@ -107,7 +109,7 @@ struct PreferencesView: View {
                         }
                     }
                 }
-                
+
                 Section {
                     Button(role: .destructive) {
                         showClearConfirmation = true
@@ -154,7 +156,7 @@ struct PreferencesView: View {
             }
         }
     }
-    
+
     private var calendarSection: some View {
         Section {
             ForEach(availableCalendars, id: \.id) { cal in
@@ -188,6 +190,7 @@ struct PreferencesView: View {
             endTime = prefs.preferredStudyEndTime
             maxSessionLength = prefs.maxSessionLength
             breakDuration = prefs.minBreakBetweenSessions
+            minSessionLength = prefs.minSessionLength
             weeklyGoalHours = prefs.weeklyStudyGoalTime / 60
             firstDayOfWeek = prefs.firstDayOfWeek
             daysOff = Set(prefs.preferredDaysOff)
@@ -209,7 +212,8 @@ struct PreferencesView: View {
             weeklyStudyGoalTime: weeklyGoalHours * 60,
             firstDayOfWeek: firstDayOfWeek,
             selectedCalendarIdentifiers: selectedCalendarIdentifiers,
-            includeCalendarEvents: includeCalendarEvents
+            includeCalendarEvents: includeCalendarEvents,
+            minSessionLength: minSessionLength
         )
         do {
             try persistenceService.savePreferences(prefs)

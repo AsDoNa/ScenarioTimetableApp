@@ -15,10 +15,13 @@ import SwiftUI
 
 struct TaskListView: View {
 
-    @State private var viewModel = TaskViewModel(persistenceService: PersistenceService())
+    var viewModel: TaskViewModel
+    var timetableVM: TimetableViewModel
     @State private var showAddTask = false
     @State private var taskToEdit: StudyTask?
     @State private var sortBy: SortOption = .deadline
+    @State private var showScheduleAlert = false
+    @State private var scheduleAlertMessage = ""
 
     enum SortOption: String, CaseIterable {
         case deadline = "Deadline"
@@ -113,6 +116,24 @@ struct TaskListView: View {
             .refreshable {
                 await viewModel.loadTasks()
             }
+            .toolbar {
+                ToolbarItem(placement: .bottomBar) {
+                    Button {
+                        generateScheduleFromTasks()
+                    } label: {
+                        Label("Generate Schedule", systemImage: "sparkles")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(activeTasks.isEmpty)
+                }
+            }
+            .alert("Schedule", isPresented: $showScheduleAlert) {
+                Button("OK") { }
+            } message: {
+                Text(scheduleAlertMessage)
+            }
             .overlay {
                 if let error = viewModel.errorMessage {
                     VStack {
@@ -174,5 +195,27 @@ struct TaskListView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Actions
+
+    private func generateScheduleFromTasks() {
+        guard timetableVM.weekSchedule != nil else {
+            scheduleAlertMessage = "Load the timetable first from the Timetable tab."
+            showScheduleAlert = true
+            return
+        }
+
+        timetableVM.reloadTasks()
+        timetableVM.generateSchedule()
+
+        let sessions = timetableVM.weekSchedule?.studySessions ?? []
+        if sessions.isEmpty {
+            scheduleAlertMessage = "Could not place any sessions. Try adjusting your preferences or freeing up time."
+        } else {
+            let noun = sessions.count == 1 ? "session" : "sessions"
+            scheduleAlertMessage = "\(sessions.count) study \(noun) scheduled."
+        }
+        showScheduleAlert = true
     }
 }

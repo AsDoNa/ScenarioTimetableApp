@@ -13,14 +13,8 @@ import SwiftUI
 
 struct TimetableView: View {
 
-    // Each view creates its own dependencies so that ContentView
-    // can call TimetableView() with no parameters.
-    @State private var viewModel = TimetableViewModel(
-        uclAPIService: UCLAPIService(),
-        persistenceService: PersistenceService(),
-        calendarService: CalendarService()
-    )
-    @State private var taskVM = TaskViewModel(persistenceService: PersistenceService())
+    var viewModel: TimetableViewModel
+    var taskVM: TaskViewModel
 
     @State private var selectedDay: Date = startOfCurrentWeek()
     @State private var weekStartDate: Date = startOfCurrentWeek()
@@ -30,8 +24,14 @@ struct TimetableView: View {
     @State private var selectedSession: StudySession?
     @State private var selectedEntry: TimetableEntry?
     @State private var isExporting = false
+    @State private var viewMode: ViewMode = .week
 
     private let calendar = Calendar.current
+
+    enum ViewMode: String, CaseIterable {
+        case week = "Week"
+        case month = "Month"
+    }
 
     // MARK: - Computed helpers
 
@@ -66,26 +66,49 @@ struct TimetableView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                weekNavigationHeader
-                daySelector
-                Divider()
-
-                if viewModel.isLoading {
-                    Spacer()
-                    ProgressView("Loading timetable...")
-                    Spacer()
-                } else if let error = viewModel.errorMessage {
-                    errorContent(error)
-                } else if viewModel.weekSchedule == nil {
-                    emptyTimetableContent
-                } else if itemsForSelectedDay.isEmpty {
-                    freeDayContent
-                } else {
-                    timelineContent
+                Picker("View", selection: $viewMode) {
+                    ForEach(ViewMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.top, 8)
 
-                if viewModel.weekSchedule != nil {
-                    bottomToolbar
+                if viewMode == .week {
+                    weekNavigationHeader
+                    daySelector
+                    Divider()
+
+                    if viewModel.isLoading {
+                        Spacer()
+                        ProgressView("Loading timetable...")
+                        Spacer()
+                    } else if let error = viewModel.errorMessage {
+                        errorContent(error)
+                    } else if viewModel.weekSchedule == nil {
+                        emptyTimetableContent
+                    } else if itemsForSelectedDay.isEmpty {
+                        freeDayContent
+                    } else {
+                        timelineContent
+                    }
+
+                    if viewModel.weekSchedule != nil {
+                        bottomToolbar
+                    }
+                } else {
+                    MonthCalendarView(
+                        viewModel: viewModel,
+                        selectedDay: $selectedDay,
+                        weekStartDate: $weekStartDate,
+                        onSwitchToWeekView: {
+                            viewMode = .week
+                            if viewModel.weekSchedule != nil {
+                                Task { await viewModel.loadWeekSchedule(startDate: weekStartDate) }
+                            }
+                        }
+                    )
                 }
             }
             .navigationTitle("Timetable")
