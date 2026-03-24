@@ -25,6 +25,11 @@ struct TimetableView: View {
     @State private var selectedEntry: TimetableEntry?
     @State private var isExporting = false
     @State private var viewMode: ViewMode = .week
+    @State private var exportStatus: ExportStatus = .idle
+
+    enum ExportStatus {
+        case idle, exporting, success, failure
+    }
 
     private let calendar = Calendar.current
 
@@ -114,14 +119,41 @@ struct TimetableView: View {
             .navigationTitle("Timetable")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if viewModel.weekSchedule != nil {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if !(viewModel.weekSchedule?.studySessions.isEmpty ?? true) {
+                        Button {
+                            exportStatus = .exporting
+                            Task {
+                                do {
+                                    try await viewModel.exportStudySessions()
+                                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                                    exportStatus = .success
+                                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                    exportStatus = .idle
+
+                                } catch {
+                                    exportStatus = .failure
+                                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                    exportStatus = .idle
+                                }
+                            }
+                        } label: {
+                            switch exportStatus {
+                            case .idle: Image(systemName: "tray.and.arrow.up")
+                            case .exporting: ProgressView().scaleEffect(0.7)
+                            case .success: Image(systemName: "checkmark").foregroundStyle(.green)
+                            case .failure: Image(systemName: "xmark").foregroundStyle(.red)
+                            }
+                        }
+                        .disabled(exportStatus == .exporting)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         Task { await viewModel.refreshWeek() }
-                        }
+                    }
                     label: {
-                            Image(systemName: "arrow.clockwise")
-                        }
+                        Image(systemName: "arrow.clockwise")
                     }
                 }
             }
@@ -292,25 +324,9 @@ struct TimetableView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isGenerating || taskVM.tasks.filter({ !$0.isComplete }).isEmpty)
-                
-                
-
-                // Task #7: Export to Calendar button
                 if !(viewModel.weekSchedule?.studySessions.isEmpty ?? true) {
-                    Button {
-                        isExporting = true
-                        Task {
-                            try? await viewModel.exportStudySessions()
-                            isExporting = false
-                        }
-                    } label: {
-                        Label("Export to Calendar", systemImage: "tray.and.arrow.up")
-                            .font(.subheadline)
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(isExporting)
                     Button(role: .destructive) {
-                        Task { await viewModel.clearStudySessions() }
+                        Task { viewModel.clearStudySessions() }
                     } label: {
                         Label("Clear", systemImage: "trash")
                             .font(.subheadline)
@@ -356,7 +372,7 @@ struct TimetableView: View {
             scheduleAlertMessage = "Could not place any sessions. Try adjusting your preferences or freeing up time."
         } else {
             let noun = sessions.count == 1 ? "session" : "sessions"
-            scheduleAlertMessage = "\(sessions.count) study \(noun) scheduled for this week."
+            scheduleAlertMessage = "\(sessions.count) study \(noun) scheduled."
         }
         showScheduleAlert = true
         isGenerating = false

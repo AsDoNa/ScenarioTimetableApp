@@ -76,8 +76,11 @@ final class TimetableViewModel {
             }
 
             // Load stored study sessions
-            let sessions = try persistenceService.loadSessions()
-
+            let allSessions = try persistenceService.loadSessions()
+            let weekSessions = allSessions.filter { session in
+                session.startTime >= startDate && session.startTime < weekEnd
+            }
+            
             // Load tasks for scheduling
             tasks = try persistenceService.loadTasks()
 
@@ -108,7 +111,7 @@ final class TimetableViewModel {
             weekSchedule = WeekSchedule(
                 weekStartDate: startDate,
                 timetableEntries: timetable,
-                studySessions: sessions,
+                studySessions: weekSessions,
                 calendarEvents: weekEvents
             )
         } catch {
@@ -154,19 +157,15 @@ final class TimetableViewModel {
     }
 
     func exportStudySessions() async throws {
-        guard let dateRange = weekDateRange else { return }
-        try calendarService?.clearStudySessions(for: dateRange)
-        try await calendarService?.exportStudySessions(weekSchedule?.studySessions ?? [])
+        let allSessions = (try? persistenceService.loadSessions()) ?? []
+        try calendarService?.clearStudySessions(for: futureRange)
+        try await calendarService?.exportStudySessions(allSessions)
     }
 
     // MARK: - Clear Schedule
 
     func clearStudySessions() {
-        guard let dateRange = weekDateRange else {
-            saveStudySessions([])
-            return
-        }
-        try? calendarService?.clearStudySessions(for: dateRange)
+        try? calendarService?.clearStudySessions(for: futureRange)
         saveStudySessions([])
     }
 
@@ -182,6 +181,12 @@ final class TimetableViewModel {
         guard let startDate = weekSchedule?.weekStartDate else { return nil }
         let endDate = Calendar.current.date(byAdding: .day, value: 7, to: startDate)!
         return DateInterval(start: startDate, end: endDate)
+    }
+    
+    private var futureRange: DateInterval {
+        let startOfToday = Calendar.current.startOfDay(for: Date())
+        return DateInterval(start: startOfToday, end: Date().addingTimeInterval(365 * 24 * 60 * 60))
+
     }
 
     // MARK: - Task Helpers

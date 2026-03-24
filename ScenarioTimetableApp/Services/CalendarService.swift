@@ -26,7 +26,10 @@ class CalendarService:CalendarServiceProtocol {
         hasCalendarAccess = try await eventStore.requestFullAccessToEvents()
     }
     
-    func availableCalendars() -> [(id: String, title: String)] {
+    func availableCalendars() async -> [(id: String, title: String)] {
+        print("studyCalendar: \(studyCalendar?.title ?? "nil")")
+        print("studyCalendarKey in UserDefaults: \(UserDefaults.standard.string(forKey: studyCalendarKey) ?? "nil")")
+        try? await requestCalendarAccess()
         if studyCalendar == nil, let id = UserDefaults.standard.string(forKey: studyCalendarKey) {
                     studyCalendar = eventStore.calendar(withIdentifier: id)
         }
@@ -69,7 +72,15 @@ class CalendarService:CalendarServiceProtocol {
         studyCalendar = calendar
         return calendar
     }
-
+    
+    func deleteStudyCalendar() throws {
+        if let id = UserDefaults.standard.string(forKey: studyCalendarKey),
+               let calendar = eventStore.calendar(withIdentifier: id) {
+                try eventStore.removeCalendar(calendar, commit: true)
+                UserDefaults.standard.removeObject(forKey: studyCalendarKey)
+                studyCalendar = nil
+        }
+    }
     
     func clearStudySessions(for dateRange : DateInterval) throws {
         let studyCalendar = try getOrCreateStudyCalendar()

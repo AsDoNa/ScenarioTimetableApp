@@ -7,10 +7,11 @@ import Foundation
 
 protocol CalendarServiceProtocol {
     func requestCalendarAccess() async throws
-    func availableCalendars() -> [(id: String, title: String)]
+    func availableCalendars() async -> [(id: String, title: String)]
     func fetchEvents(for dateRange: DateInterval, calendars: [String]) async throws -> [CalendarEvent]
     func exportStudySessions(_ sessions: [StudySession]) async throws
     func clearStudySessions(for dateRange : DateInterval) throws
+    func deleteStudyCalendar() throws
 }
 
 protocol PersistenceServiceProtocol {
